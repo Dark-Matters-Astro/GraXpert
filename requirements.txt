@@ -4,6 +4,7 @@ customtkinter
 minio
 ml_dtypes
 numpy
+onnxruntime>=1.18
 Pillow
 pykrige
 opencv-Python

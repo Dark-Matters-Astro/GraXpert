@@ -27,6 +27,7 @@ from graxpert.denoising import denoise
 from graxpert.localization import _
 from graxpert.mp_logging import logfile_name
 from graxpert.preferences import fitsheader_2_app_state, load_preferences, prefs_2_app_state
+from graxpert.sample_free_background import SampleFreeParameters
 from graxpert.s3_secrets import bge_bucket_name, deconvolution_object_bucket_name, deconvolution_stars_bucket_name, denoise_bucket_name
 from graxpert.stretch import StretchParameters, stretch_all
 from graxpert.ui.loadingframe import DynamicProgressThread
@@ -102,6 +103,7 @@ class GraXpert:
         eventbus.add_listener(AppEvents.SCALING_CHANGED, self.on_scaling_changed)
         eventbus.add_listener(AppEvents.AI_BATCH_SIZE_CHANGED, self.on_ai_batch_size_changed)
         eventbus.add_listener(AppEvents.AI_GPU_ACCELERATION_CHANGED, self.on_ai_gpu_acceleration_changed)
+        eventbus.add_listener(AppEvents.SAMPLE_FREE_SETTINGS_CHANGED, self.on_sample_free_settings_changed)
 
     # event handling
     def on_ai_batch_size_changed(self, event):
@@ -112,6 +114,11 @@ class GraXpert:
 
     def on_bge_ai_version_changed(self, event):
         self.prefs.bge_ai_version = event["bge_ai_version"]
+
+    def on_sample_free_settings_changed(self, event):
+        for name, value in event.items():
+            if name.startswith("sample_free_") and hasattr(self.prefs, name):
+                setattr(self.prefs, name, value)
 
     def on_bg_floot_selection_changed(self, event):
         self.prefs.bg_flood_selection_option = event["bg_flood_selection_option"]
@@ -130,7 +137,7 @@ class GraXpert:
         background_points = self.cmd.app_state.background_points
 
         # Error messages if not enough points
-        if len(background_points) == 0 and self.prefs.interpol_type_option != "AI":
+        if len(background_points) == 0 and self.prefs.interpol_type_option not in ("AI", "Sample-free"):
             messagebox.showerror("Error", _("Please select background points with left click."))
             return
 
@@ -159,6 +166,7 @@ class GraXpert:
             self.prefs.images_linked_option = False
 
             img_array_to_be_processed = np.copy(self.images.get(ImageTypes.Original).img_array)
+            sample_free_components = {}
 
             background = AstroImage()
             background.set_from_array(
@@ -175,6 +183,17 @@ class GraXpert:
                     ai_model_path_from_version(bge_ai_models_dir, self.prefs.bge_ai_version),
                     progress,
                     self.prefs.ai_gpu_acceleration,
+                    SampleFreeParameters(
+                        scale=self.prefs.sample_free_scale,
+                        smoothness=self.prefs.sample_free_smoothness,
+                        protect=self.prefs.sample_free_protect,
+                        protect_threshold=self.prefs.sample_free_protect_threshold,
+                        protect_amount=self.prefs.sample_free_protect_amount,
+                        simplified=self.prefs.sample_free_simplified,
+                        degree=self.prefs.sample_free_degree,
+                        downsample=self.prefs.sample_free_downsample,
+                    ),
+                    sample_free_components,
                 )
             )
 
@@ -191,6 +210,15 @@ class GraXpert:
 
             self.images.set(ImageTypes.Gradient_Corrected, gradient_corrected)
             self.images.set(ImageTypes.Background, background)
+
+            simplified_model_array = sample_free_components.get("simplified_model")
+            if simplified_model_array is not None:
+                simplified_model = AstroImage()
+                simplified_model.set_from_array(simplified_model_array)
+                simplified_model.copy_metadata(self.images.get(ImageTypes.Original))
+                self.images.set(ImageTypes.Simplified_Model, simplified_model)
+            else:
+                self.images.set(ImageTypes.Simplified_Model, None)
 
             self.images.stretch_all(StretchParameters(self.prefs.stretch_option, self.prefs.channels_linked_option), self.prefs.saturation)
 
@@ -492,6 +520,8 @@ class GraXpert:
                 suffix_2 = "_bge"
             case ImageTypes.Background:
                 suffix_2 = "_background"
+            case ImageTypes.Simplified_Model:
+                suffix_2 = "_simplified_model"
             case ImageTypes.Deconvolved_Object_only:
                 suffix_2 = "_obj_decon"
             case ImageTypes.Deconvolved_Stars_only:

@@ -17,6 +17,10 @@ from graxpert.ai_model_handling import get_execution_providers_ordered
 from graxpert.mp_logging import get_logging_queue, worker_configurer
 from graxpert.parallel_processing import executor
 from graxpert.radialbasisinterpolation import RadialBasisInterpolation
+from graxpert.sample_free_background import (
+    SampleFreeParameters,
+    extract_sample_free_background,
+)
 
 
 def gaussian_kernel(sigma=1.0, truncate=4.0):  # follow simulate skimage.filters.gaussian defaults
@@ -24,9 +28,56 @@ def gaussian_kernel(sigma=1.0, truncate=4.0):  # follow simulate skimage.filters
     return (ksize, ksize)
 
 
-def extract_background(in_imarray, background_points, interpolation_type, smoothing, downscale_factor, sample_size, RBF_kernel, spline_order, corr_type, ai_path, progress=None, ai_gpu_acceleration=True):
+def extract_background(in_imarray, background_points, interpolation_type, smoothing, downscale_factor, sample_size, RBF_kernel, spline_order, corr_type, ai_path, progress=None, ai_gpu_acceleration=True, sample_free_parameters=None, sample_free_components=None):
 
     num_colors = in_imarray.shape[-1]
+
+    if interpolation_type == "Sample-free":
+        if sample_free_parameters is None:
+            sample_free_parameters = SampleFreeParameters()
+
+        progress_units = [0]
+
+        def sample_free_progress(value, stage):
+            if progress is None:
+                return
+            target = min(84, max(0, int(round(value * 84))))
+            delta = target - progress_units[0]
+            if delta > 0:
+                progress.update(delta)
+                progress_units[0] = target
+
+        correction = "subtract" if corr_type == "Subtraction" else "divide"
+        if sample_free_components is None:
+            background, corrected = extract_sample_free_background(
+                in_imarray,
+                parameters=sample_free_parameters,
+                correction=correction,
+                progress=sample_free_progress,
+            )
+        else:
+            background, corrected, simplified_model = extract_sample_free_background(
+                in_imarray,
+                parameters=sample_free_parameters,
+                correction=correction,
+                progress=sample_free_progress,
+                return_simplified_model=True,
+            )
+            sample_free_components["simplified_model"] = simplified_model
+
+        if progress is not None:
+            progress.update(8)
+
+        np.copyto(
+            in_imarray,
+            np.clip(corrected, 0.0, 1.0),
+            casting="unsafe",
+        )
+
+        if progress is not None:
+            progress.update(8)
+
+        return background
 
     shm_imarray = None
     shm_background = None

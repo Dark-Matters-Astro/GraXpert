@@ -35,6 +35,7 @@ build_options = {
     "includes": ["astropy.constants.codata2018", "astropy.constants.iau2015", "imageio.plugins.pillow", "skimage.draw.draw", "skimage.exposure.exposure", "skimage.filters._gaussian"],
     "include_files": [
         ["./img", "./lib/img"],
+        ["./models", "./lib/models"],
         ["./graxpert-dark-blue.json", "./lib/graxpert-dark-blue.json"],
         ["./locales/", "./lib/locales/"],
         [os.path.join(astropy_path, "units", "format", "generic_parsetab.py"), "./lib/astropy/units/format/generic_parsetab.py"],

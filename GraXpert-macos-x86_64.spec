@@ -6,7 +6,7 @@ block_cipher = None
 
 
 datas = []
-datas += [('./img/*', './img/'), ('./graxpert-dark-blue.json', './')]
+datas += [('./img/*', './img/'), ('./models/*', './models/'), ('./graxpert-dark-blue.json', './')]
 datas += copy_metadata('xisf')
 
 

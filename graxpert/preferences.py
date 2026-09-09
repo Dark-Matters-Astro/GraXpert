@@ -28,6 +28,14 @@ class Prefs:
     bg_tol_option: float = 1.0
     interpol_type_option: AnyStr = "RBF"
     smoothing_option: float = 0.0
+    sample_free_scale: float = 5.0
+    sample_free_smoothness: float = 1.0
+    sample_free_protect: bool = True
+    sample_free_protect_threshold: float = 0.05
+    sample_free_protect_amount: float = 0.5
+    sample_free_simplified: bool = True
+    sample_free_degree: int = 1
+    sample_free_downsample: int = 4
     saveas_option: AnyStr = "32 bit Tiff"
     saveas_stretched: bool = False
     sample_size: int = 25
@@ -110,7 +118,17 @@ def app_state_2_fitsheader(prefs: Prefs, app_state: AppState, fits_header):
     if prefs.interpol_type_option == "AI":
         fits_header["BGE-AI-VER"] = prefs.bge_ai_version
 
-    if prefs.interpol_type_option != "AI":
+    if prefs.interpol_type_option == "Sample-free":
+        fits_header["SF-SCALE"] = prefs.sample_free_scale
+        fits_header["SF-SMTH"] = prefs.sample_free_smoothness
+        fits_header["SF-PROT"] = prefs.sample_free_protect
+        fits_header["SF-THR"] = prefs.sample_free_protect_threshold
+        fits_header["SF-AMT"] = prefs.sample_free_protect_amount
+        fits_header["SF-SIMP"] = prefs.sample_free_simplified
+        fits_header["SF-DEG"] = prefs.sample_free_degree
+        fits_header["SF-DOWN"] = prefs.sample_free_downsample
+
+    if prefs.interpol_type_option not in ("AI", "Sample-free"):
         fits_header["SAMPLE-SIZE"] = prefs.sample_size
         fits_header["RBF-KERNEL"] = prefs.RBF_kernel
         fits_header["SPLINE-ORDER"] = prefs.spline_order
@@ -131,7 +149,17 @@ def fitsheader_2_app_state(prefs: Prefs, app_state: AppState, fits_header):
         prefs.smoothing_option = fits_header["SMOOTHING"]
         prefs.corr_type = fits_header["CORR-TYPE"]
 
-        if fits_header["INTP-OPT"] != "AI":
+        if fits_header["INTP-OPT"] == "Sample-free":
+            prefs.sample_free_scale = fits_header.get("SF-SCALE", prefs.sample_free_scale)
+            prefs.sample_free_smoothness = fits_header.get("SF-SMTH", prefs.sample_free_smoothness)
+            prefs.sample_free_protect = fits_header.get("SF-PROT", prefs.sample_free_protect)
+            prefs.sample_free_protect_threshold = fits_header.get("SF-THR", prefs.sample_free_protect_threshold)
+            prefs.sample_free_protect_amount = fits_header.get("SF-AMT", prefs.sample_free_protect_amount)
+            prefs.sample_free_simplified = fits_header.get("SF-SIMP", prefs.sample_free_simplified)
+            prefs.sample_free_degree = fits_header.get("SF-DEG", prefs.sample_free_degree)
+            prefs.sample_free_downsample = fits_header.get("SF-DOWN", prefs.sample_free_downsample)
+
+        if fits_header["INTP-OPT"] not in ("AI", "Sample-free"):
             prefs.sample_size = fits_header["SAMPLE-SIZE"]
             prefs.RBF_kernel = fits_header["RBF-KERNEL"]
             prefs.spline_order = fits_header["SPLINE-ORDER"]

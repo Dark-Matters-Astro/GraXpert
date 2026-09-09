@@ -17,6 +17,19 @@ Original                     |  Gradients removed with AI
 **Homepage:** [https://www.graxpert.com](https://www.graxpert.com)  
 **Download:** [https://github.com/Steffenhir/GraXpert/releases/latest](https://github.com/Steffenhir/GraXpert/releases/latest)
 
+## Acknowledgements
+
+The automatic sample-free background method is adapted from
+[Siril](https://siril.readthedocs.io/en/latest/processing/background.html#automatic-sample-free-method).
+The GraXpert team thanks Cyril Richard and the Siril team for their work and for
+supporting continued collaboration between both projects. Technical and license
+details are recorded in `licenses/SIRIL_SAMPLE_FREE_NOTICE.md`.
+
+The repeated Gaussian approximation used by this method runs as a compact ONNX
+Runtime graph. The robust statistics, structure mask and polynomial fit remain
+the original deterministic algorithm; ONNX accelerates its principal filtering
+bottleneck without replacing it with a trained AI model.
+
 # Installation
 You can download the latest official release of GraXpert [here](https://github.com/Steffenhir/GraXpert/releases/latest). Select the correct version for your operating system. For macOS, we provide different versions
 for Intel processors (x86_64) and for apple silicon (arm64).
@@ -121,4 +134,5 @@ Once you have set up the virtual environment and installed the required packages
 python -m graxpert.main
 ```
 
-
+For validation of the sample-free ONNX implementation on Windows, see
+[`WINDOWS-TEST.md`](WINDOWS-TEST.md).

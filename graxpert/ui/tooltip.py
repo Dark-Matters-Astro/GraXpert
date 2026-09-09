@@ -176,6 +176,37 @@ smoothing_text = _(
     "may not be suited for large deviations in gradients."
 )
 
+sample_free_scale_text = _(
+    "Controls the size of structures treated as background. Higher values "
+    "produce a broader background model and protect smaller structures."
+)
+sample_free_smoothness_text = _(
+    "Adds final smoothing to the background model. Higher values suppress "
+    "small variations but may miss rapidly changing gradients."
+)
+sample_free_protect_text = _(
+    "Detects bright structures and excludes them from the background fit."
+)
+sample_free_threshold_text = _(
+    "Brightness difference at which structure protection starts. Lower "
+    "values protect fainter structures."
+)
+sample_free_amount_text = _(
+    "Controls how far the protected regions extend around detected structures."
+)
+sample_free_simplified_text = _(
+    "Fits a robust polynomial to the large-scale gradient first, then models "
+    "the remaining smaller variations."
+)
+sample_free_degree_text = _(
+    "Polynomial degree used by the simplified model. Higher degrees allow "
+    "more curvature but increase the risk of following real image structures."
+)
+sample_free_downsample_text = _(
+    "Internal resolution used for the calculation. Higher values are faster "
+    "but may reduce the accuracy of small-scale background variations."
+)
+
 calculate_text = _("Use the specified interpolation method to calculate a background model " "and subtract it from the picture. This may take a while.")
 
 deconvolution_type_text = _("Choose between different deconvolution methods.")

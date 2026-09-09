@@ -22,6 +22,7 @@ from graxpert.background_extraction import extract_background
 from graxpert.denoising import denoise
 from graxpert.deconvolution import deconvolve
 from graxpert.preferences import Prefs, load_preferences, save_preferences
+from graxpert.sample_free_background import SampleFreeParameters
 from graxpert.s3_secrets import bge_bucket_name, denoise_bucket_name, deconvolution_object_bucket_name, deconvolution_stars_bucket_name
 
 user_preferences_filename = os.path.join(user_config_dir(appname="GraXpert"), "preferences.json")
@@ -98,6 +99,19 @@ class BGECmdlineTool(CmdlineToolBase):
                         if "ai_gpu_acceleration" in json_prefs:
                             preferences.ai_gpu_acceleration = json_prefs["ai_gpu_acceleration"]
 
+                        for name in (
+                            "sample_free_scale",
+                            "sample_free_smoothness",
+                            "sample_free_protect",
+                            "sample_free_protect_threshold",
+                            "sample_free_protect_amount",
+                            "sample_free_simplified",
+                            "sample_free_degree",
+                            "sample_free_downsample",
+                        ):
+                            if name in json_prefs:
+                                setattr(preferences, name, json_prefs[name])
+
                         if preferences.interpol_type_option == "Kriging" or preferences.interpol_type_option == "RBF":
                             downscale_factor = 4
 
@@ -136,25 +150,42 @@ class BGECmdlineTool(CmdlineToolBase):
             logging.info(
                 dedent(
                     f"""\
-                        Excecuting background extraction with the following parameters:
+                        Executing background extraction with the following parameters:
                         interpolation type - {preferences.interpol_type_option}
                                  smoothing - {preferences.smoothing_option}
                            correction type - {preferences.corr_type}
                              AI model path - {ai_model_path}"""
                 )
             )
+        elif preferences.interpol_type_option == "Sample-free":
+            logging.info(
+                dedent(
+                    f"""\
+                        Executing background extraction with the following parameters:
+                        interpolation type - {preferences.interpol_type_option}
+                                     scale - {preferences.sample_free_scale}
+                                smoothness - {preferences.sample_free_smoothness}
+                                   protect - {preferences.sample_free_protect}
+                         protect threshold - {preferences.sample_free_protect_threshold}
+                            protect amount - {preferences.sample_free_protect_amount}
+                                simplified - {preferences.sample_free_simplified}
+                         polynomial degree - {preferences.sample_free_degree}
+                                downsample - {preferences.sample_free_downsample}
+                           correction type - {preferences.corr_type}"""
+                )
+            )
         else:
             logging.info(
                 dedent(
                     f"""\
-                        Excecuting background extraction with the following parameters:
+                        Executing background extraction with the following parameters:
                         interpolation type - {preferences.interpol_type_option}
                          background points - {preferences.background_points}
                                sample size - {preferences.sample_size}
                                     kernel - {preferences.RBF_kernel}
                               spline order - {preferences.spline_order}
                                  smoothing - {preferences.smoothing_option}
-                            orrection type - {preferences.corr_type}
+                           correction type - {preferences.corr_type}
                          downscale_factor  - {downscale_factor}"""
                 )
             )
@@ -172,6 +203,16 @@ class BGECmdlineTool(CmdlineToolBase):
                 preferences.corr_type,
                 ai_model_path,
                 ai_gpu_acceleration=preferences.ai_gpu_acceleration,
+                sample_free_parameters=SampleFreeParameters(
+                    scale=preferences.sample_free_scale,
+                    smoothness=preferences.sample_free_smoothness,
+                    protect=preferences.sample_free_protect,
+                    protect_threshold=preferences.sample_free_protect_threshold,
+                    protect_amount=preferences.sample_free_protect_amount,
+                    simplified=preferences.sample_free_simplified,
+                    degree=preferences.sample_free_degree,
+                    downsample=preferences.sample_free_downsample,
+                ),
             )
         )
 
