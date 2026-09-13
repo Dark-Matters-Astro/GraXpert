@@ -12,6 +12,7 @@ import logging
 import multiprocessing
 import re
 import sys
+import faulthandler
 
 from packaging import version
 
@@ -355,6 +356,8 @@ def main():
                 deconv_obj_parser.print_help()
             elif "deconv-stellar" in sys.argv:
                 deconv_stellar_parser.print_help()
+            else:
+                parser.print_help()
             sys.exit(0)
 
         args, extras = parser.parse_known_args()
@@ -407,5 +410,6 @@ def main():
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     configure_logging()
+    faulthandler.enable(sys.__stderr__)
     main()
     logging.shutdown()
