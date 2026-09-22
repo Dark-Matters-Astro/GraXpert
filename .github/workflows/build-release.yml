@@ -58,7 +58,7 @@ jobs:
       - name: setup python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.11"
+          python-version: "3.14"
       - name: checkout repository
         uses: actions/checkout@v7
       - name: configure ai s3 secrets
@@ -73,7 +73,7 @@ jobs:
           echo "deconvolution_stars_bucket_name = \"$ai_s3_deconvolution_stars_bucket_name\"" >> ./graxpert/s3_secrets.py
       - name: install dependencies
         run: |
-          pip install setuptools wheel cx_freeze==7.2.3 && \
+          pip install setuptools wheel cx_freeze && \
           pip install onnxruntime-gpu && \
           pip install -r requirements.txt
       - name: patch version
@@ -99,7 +99,7 @@ jobs:
       - name: setup python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.11"
+          python-version: "3.14"
       - name: checkout repository
         uses: actions/checkout@v7
       - name: configure ai s3 secrets
@@ -115,18 +115,21 @@ jobs:
           "deconvolution_stars_bucket_name = `"$env:ai_s3_deconvolution_stars_bucket_name`"" | Out-File -Append .\graxpert\s3_secrets.py
       - name: install dependencies
         run: |
-          pip install setuptools wheel cx_freeze==7.2.3; `
+          pip install setuptools wheel cx_freeze; `
           pip install onnxruntime-directml; `
           pip install -r requirements.txt
       - name: patch version
         run: ./releng/patch_version.ps1
       - name: create GraXpert-win64 bundle
         run: python ./setup.py bdist_msi
+      - name: Show build output
+        run: dir dist
+        shell: cmd
       - name: store artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: GraXpert-${{github.ref_name}}-win64.msi
-          path: ./dist/GraXpert-${{github.ref_name}}-win64.msi
+          name: GraXpert-amd64.msi
+          path: ./dist/GraXpert-amd64.msi
           retention-days: 5
 
   build-macos-arm64:
@@ -147,7 +150,7 @@ jobs:
       - name: setup python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.11"
+          python-version: "3.14"
       - name: install dependencies
         run: |
           brew install python-tk && \
@@ -207,12 +210,12 @@ jobs:
       - name: setup python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.11"
+          python-version: "3.13"
       - name: install dependencies
         run: |
           brew install python-tk && \
           pip3 install setuptools wheel pyinstaller --break-system-packages && \
-          pip3 install onnxruntime --break-system-packages && \
+          pip3 install "onnxruntime<=1.23.2" --break-system-packages && \
           pip3 install -r requirements.txt --break-system-packages
       - name: patch version
         run: |
@@ -260,7 +263,7 @@ jobs:
       - name: download windows exe
         uses: actions/download-artifact@v8
         with:
-          name: GraXpert-${{github.ref_name}}-win64.msi
+          name: GraXpert-amd64.msi
       - name: download macos x86_64 artifacts
         uses: actions/download-artifact@v8
         with:
@@ -274,7 +277,7 @@ jobs:
         with:
           files: |
             GraXpert-linux.zip
-            GraXpert-${{github.ref_name}}-win64.msi
+            GraXpert-amd64.msi
             GraXpert-macos-x86_64.dmg
             GraXpert-macos-arm64.dmg
       #     graxpert_${{github.ref_name}}-1_amd64.deb

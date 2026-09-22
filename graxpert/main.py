@@ -17,7 +17,7 @@ import faulthandler
 from packaging import version
 
 from graxpert.ai_model_handling import bge_ai_models_dir, denoise_ai_models_dir, deconvolution_object_ai_models_dir, deconvolution_stars_ai_models_dir, list_local_versions, list_remote_versions
-from graxpert.mp_logging import configure_logging
+from graxpert.mp_logging import configure_logging, logfile_name
 from graxpert.s3_secrets import bge_bucket_name, denoise_bucket_name, deconvolution_object_bucket_name, deconvolution_stars_bucket_name
 from graxpert.version import release as graxpert_release
 from graxpert.version import version as graxpert_version
@@ -410,6 +410,7 @@ def main():
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     configure_logging()
-    faulthandler.enable(sys.__stderr__)
+    faulthandler_log = open(os.path.join(os.path.dirname(logfile_name), "faulthandler.log"), "w")
+    faulthandler.enable(faulthandler_log)
     main()
     logging.shutdown()
