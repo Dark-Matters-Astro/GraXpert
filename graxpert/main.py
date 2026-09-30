@@ -16,6 +16,8 @@ import faulthandler
 
 from packaging import version
 
+from graxpert.cli_background import add_background_arguments
+
 from graxpert.ai_model_handling import bge_ai_models_dir, denoise_ai_models_dir, deconvolution_object_ai_models_dir, deconvolution_stars_ai_models_dir, list_local_versions, list_remote_versions
 from graxpert.mp_logging import configure_logging, logfile_name
 from graxpert.s3_secrets import bge_bucket_name, denoise_bucket_name, deconvolution_object_bucket_name, deconvolution_stars_bucket_name
@@ -221,6 +223,7 @@ def main():
         parser.add_argument("-v", "--version", action="version", version=f"GraXpert version: {graxpert_version} release: {graxpert_release}")
 
         bge_parser = argparse.ArgumentParser("GraXpert Background Extraction", parents=[parser], description="GraXpert, the astronomical background extraction tool")
+        add_background_arguments(bge_parser)
         bge_parser.add_argument(
             "-ai_version",
             "--ai_version",

@@ -17,6 +17,7 @@ from graxpert.ai_model_handling import (
     latest_version,
     list_local_versions,
 )
+from graxpert.cli_background import apply_background_arguments
 from graxpert.astroimage import AstroImage
 from graxpert.background_extraction import extract_background
 from graxpert.denoising import denoise
@@ -112,9 +113,6 @@ class BGECmdlineTool(CmdlineToolBase):
                             if name in json_prefs:
                                 setattr(preferences, name, json_prefs[name])
 
-                        if preferences.interpol_type_option == "Kriging" or preferences.interpol_type_option == "RBF":
-                            downscale_factor = 4
-
             except Exception as e:
                 logging.exception(e)
                 logging.shutdown()
@@ -122,6 +120,10 @@ class BGECmdlineTool(CmdlineToolBase):
         else:
             preferences = Prefs()
             preferences.interpol_type_option = "AI"
+
+        apply_background_arguments(self.args, preferences)
+        if preferences.interpol_type_option in ("Kriging", "RBF"):
+            downscale_factor = 4
 
         if self.args.smoothing is not None:
             preferences.smoothing_option = self.args.smoothing
