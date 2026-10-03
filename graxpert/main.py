@@ -2,6 +2,9 @@ import os
 import platform
 import sys
 
+# Configure the environment before importing any ONNX Runtime consumers.
+import graxpert.runtime_environment  # noqa: F401
+
 # ensure sys.stdout and sys.stderr are not None in PyInstaller environments
 if sys.stdout is None:
     sys.stdout = open(os.devnull, "w")

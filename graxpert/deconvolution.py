@@ -2,7 +2,7 @@ import copy
 import logging
 
 import numpy as np
-import onnxruntime as ort
+from graxpert.onnx_runtime import ort
 
 from graxpert.ai_model_handling import get_execution_providers_ordered
 from graxpert.application.app_events import AppEvents

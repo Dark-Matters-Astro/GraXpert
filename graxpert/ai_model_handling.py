@@ -4,7 +4,7 @@ import re
 import shutil
 import zipfile
 
-import onnxruntime as ort
+from graxpert.onnx_runtime import ort
 from appdirs import user_data_dir
 from minio import Minio
 from packaging import version

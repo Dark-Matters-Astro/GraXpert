@@ -5,7 +5,7 @@ from __future__ import annotations
 import threading
 
 import numpy as np
-import onnxruntime as ort
+from graxpert.onnx_runtime import ort
 
 from graxpert.resource_utils import resource_path
 

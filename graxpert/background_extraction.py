@@ -8,7 +8,7 @@ from multiprocessing import shared_memory
 
 import cv2
 import numpy as np
-import onnxruntime as ort
+from graxpert.onnx_runtime import ort
 from astropy.stats import sigma_clipped_stats
 from pykrige.ok import OrdinaryKriging
 from scipy import interpolate, linalg
