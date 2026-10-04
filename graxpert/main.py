@@ -418,5 +418,10 @@ if __name__ == "__main__":
     configure_logging()
     faulthandler_log = open(os.path.join(os.path.dirname(logfile_name), "faulthandler.log"), "w")
     faulthandler.enable(faulthandler_log)
+    import onnxruntime as ort
+    try:
+        ort.disable_telemetry_events()
+    except Exception as e:
+        logging.exception(e)
     main()
     logging.shutdown()
