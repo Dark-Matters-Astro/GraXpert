@@ -2,6 +2,9 @@ import os
 import platform
 import sys
 
+# Disable telemetry before ONNX loads; spawned helpers inherit this setting.
+os.environ["ORT_DISABLE_TELEMETRY"] = "1"
+
 # ensure sys.stdout and sys.stderr are not None in PyInstaller environments
 if sys.stdout is None:
     sys.stdout = open(os.devnull, "w")
