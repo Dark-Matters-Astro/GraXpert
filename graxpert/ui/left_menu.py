@@ -398,7 +398,9 @@ class DeconvolutionMenu(CollapsibleMenuFrame):
 
 class DenoiseMenu(CollapsibleMenuFrame):
     def __init__(self, parent, **kwargs):
-        super().__init__(parent, title=_("Denoising"), show=False, number=5, **kwargs)
+        # 2026-10-10: disable deconvolution for Charon due to insufficient model quality
+        # super().__init__(parent, title=_("Denoising"), show=False, number=5, **kwargs)
+        super().__init__(parent, title=_("Denoising"), show=False, number=4, **kwargs)
 
         self.denoise_strength = tk.DoubleVar()
         self.denoise_strength.set(graxpert.prefs.denoise_strength)
@@ -444,7 +446,9 @@ class DenoiseMenu(CollapsibleMenuFrame):
 
 class SaveMenu(CollapsibleMenuFrame):
     def __init__(self, parent, **kwargs):
-        super().__init__(parent, title=_("Saving"), show=False, number=6, **kwargs)
+        # 2026-10-10: disable deconvolution for Charon due to insufficient model quality
+        # super().__init__(parent, title=_("Saving"), show=False, number=6, **kwargs)
+        super().__init__(parent, title=_("Saving"), show=False, number=5, **kwargs)
 
         # saving
         self.saveas_options = ["16 bit Tiff", "32 bit Tiff", "16 bit Fits", "32 bit Fits", "16 bit XISF", "32 bit XISF"]
@@ -513,7 +517,8 @@ class LeftMenu(GraXpertScrollableFrame):
         self.load_menu = LoadMenu(self, fg_color="transparent")
         self.crop_menu = CropMenu(self, fg_color="transparent")
         self.extraction_menu = ExtractionMenu(self, fg_color="transparent")
-        self.deconvolution_menu = DeconvolutionMenu(self, fg_color="transparent")
+        # 2026-10-10: disable deconvolution for Charon due to insufficient model quality
+        # self.deconvolution_menu = DeconvolutionMenu(self, fg_color="transparent")
         self.denoise_menu = DenoiseMenu(self, fg_color="transparent")
         self.save_menu = SaveMenu(self, fg_color="transparent")
 
@@ -533,6 +538,7 @@ class LeftMenu(GraXpertScrollableFrame):
         self.load_menu.grid(column=0, row=next_row(), ipadx=padx, sticky=tk.N)
         self.crop_menu.grid(column=0, row=next_row(), ipadx=padx, sticky=tk.N)
         self.extraction_menu.grid(column=0, row=next_row(), ipadx=padx, sticky=tk.N)
-        self.deconvolution_menu.grid(column=0, row=next_row(), ipadx=padx, sticky=tk.N)
+        # 2026-10-10: disable deconvolution for Charon due to insufficient model quality
+        # self.deconvolution_menu.grid(column=0, row=next_row(), ipadx=padx, sticky=tk.N)
         self.denoise_menu.grid(column=0, row=next_row(), ipadx=padx, sticky=tk.N)
         self.save_menu.grid(column=0, row=next_row(), ipadx=padx, sticky=tk.N)
