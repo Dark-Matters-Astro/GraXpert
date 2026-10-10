@@ -1,0 +1,22 @@
+# Normalize text files to LF in the repository and working tree
+* text=auto eol=lf
+
+# cmd.exe can fail to find goto/call labels in LF-only batch files
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Binary files; FITS starts with ASCII header blocks, so auto-detection could misclassify it
+*.fits binary
+*.fit binary
+*.fts binary
+*.xisf binary
+*.tiff binary
+*.tif binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.icns binary
+*.mo binary
+*.onnx binary
