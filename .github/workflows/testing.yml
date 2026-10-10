@@ -1,24 +1,25 @@
 name: testing
 
-on: 
+on:
   workflow_dispatch:
   push:
     branches:
-      - master
+      - main
       - develop
 
-jobs: 
+jobs:
   test-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: setup python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v7
         with:
-          python-version: '3.10'
+          python-version: "3.14"
       - name: checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
       - name: install dependencies
         run: |
+          pip install onnxruntime && \
           pip install -r requirements.txt && \
           pip install pytest
       - name: patch version
@@ -30,19 +31,19 @@ jobs:
       - name: Run tests
         run: python -m pytest --import-mode=append tests/
 
-
   test-windows:
     runs-on: windows-latest
     steps:
       - name: setup python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v7
         with:
-          python-version: '3.10'
+          python-version: "3.14"
       - name: checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
       - name: install dependencies
         run: |
-          pip install -r requirements.txt && `
+          pip install onnxruntime; `
+          pip install -r requirements.txt; `
           pip install pytest
       - name: patch version
         run: ./releng/patch_version.ps1
@@ -51,21 +52,21 @@ jobs:
       - name: Run tests
         run: python -m pytest --import-mode=append tests/
 
-  test-macos-x86_64:
-    runs-on: macos-11
+  test-macos-arm64:
+    runs-on: macos-14
     steps:
       - name: checkout repository
-        uses: actions/checkout@v3
-      - name: unbreak python in github actions
-        run: |
-         find /usr/local/bin -lname '*/Library/Frameworks/Python.framework/*' -delete
-         sudo rm -rf /Library/Frameworks/Python.framework/
-         brew install --force python3 && brew unlink python3 && brew unlink python3 && brew link --overwrite python3
+        uses: actions/checkout@v7
+      - name: setup python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
       - name: install dependencies
         run: |
           brew install python-tk && \
-          pip3 install -r requirements.txt
-          pip3 install pytest
+          pip3 install onnxruntime --break-system-packages && \
+          pip3 install -r requirements.txt --break-system-packages && \
+          pip3 install pytest --break-system-packages
       - name: patch version
         run: |
           chmod u+x ./releng/patch_version.sh && \
@@ -73,5 +74,24 @@ jobs:
       - name: Run tests
         run: python3 -m pytest --import-mode=append tests/
 
-
-
+  test-macos-x86_64:
+    runs-on: macos-15-intel
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v7
+      - name: setup python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: install dependencies
+        run: |
+          brew install python-tk && \
+          pip3 install "onnxruntime<=1.23.2" --break-system-packages && \
+          pip3 install -r requirements.txt --break-system-packages && \
+          pip3 install pytest --break-system-packages
+      - name: patch version
+        run: |
+          chmod u+x ./releng/patch_version.sh && \
+          ./releng/patch_version.sh
+      - name: Run tests
+        run: python3 -m pytest --import-mode=append tests/
