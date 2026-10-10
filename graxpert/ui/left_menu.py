@@ -8,7 +8,7 @@ from graxpert.application.app_events import AppEvents
 from graxpert.application.eventbus import eventbus
 from graxpert.localization import _
 from graxpert.ui.ui_events import UiEvents
-from graxpert.ui.widgets import CollapsibleMenuFrame, GraXpertButton, GraXpertCheckbox, GraXpertOptionMenu, GraXpertScrollableFrame, ProcessingStep, ValueSlider, default_label_width, padx, pady
+from graxpert.ui.widgets import CollapsibleMenuFrame, GraXpertButton, GraXpertCheckbox, GraXpertLabel, GraXpertOptionMenu, GraXpertScrollableFrame, ProcessingStep, ValueSlider, default_label_width, padx, pady
 
 
 class LoadMenu(CollapsibleMenuFrame):
@@ -100,7 +100,7 @@ class ExtractionMenu(CollapsibleMenuFrame):
         super().__init__(parent, title=_("Background Extraction"), show=False, number=3, **kwargs)
 
         # method selection
-        self.interpol_options = ["RBF", "Splines", "Kriging", "AI"]
+        self.interpol_options = ["RBF", "Splines", "Kriging", "Sample-free", "AI"]
         self.interpol_type = tk.StringVar()
         self.interpol_type.set(graxpert.prefs.interpol_type_option)
         self.interpol_type.trace_add("write", lambda a, b, c: eventbus.emit(AppEvents.INTERPOL_TYPE_CHANGED, {"interpol_type_option": self.interpol_type.get()}))
@@ -126,6 +126,36 @@ class ExtractionMenu(CollapsibleMenuFrame):
         self.smoothing = tk.DoubleVar()
         self.smoothing.set(graxpert.prefs.smoothing_option)
         self.smoothing.trace_add("write", lambda a, b, c: eventbus.emit(AppEvents.SMOTTHING_CHANGED, {"smoothing_option": self.smoothing.get()}))
+
+        # automatic sample-free background model
+        self.sample_free_scale = tk.DoubleVar()
+        self.sample_free_scale.set(graxpert.prefs.sample_free_scale)
+        self.sample_free_scale.trace_add("write", lambda a, b, c: eventbus.emit(AppEvents.SAMPLE_FREE_SETTINGS_CHANGED, {"sample_free_scale": self.sample_free_scale.get()}))
+
+        self.sample_free_smoothness = tk.DoubleVar()
+        self.sample_free_smoothness.set(graxpert.prefs.sample_free_smoothness)
+        self.sample_free_smoothness.trace_add("write", lambda a, b, c: eventbus.emit(AppEvents.SAMPLE_FREE_SETTINGS_CHANGED, {"sample_free_smoothness": self.sample_free_smoothness.get()}))
+
+        self.sample_free_protect = tk.BooleanVar()
+        self.sample_free_protect.set(graxpert.prefs.sample_free_protect)
+        self.sample_free_protect.trace_add("write", self.on_sample_free_protect_changed)
+
+        self.sample_free_protect_threshold = tk.DoubleVar()
+        self.sample_free_protect_threshold.set(graxpert.prefs.sample_free_protect_threshold)
+        self.sample_free_protect_threshold.trace_add("write", lambda a, b, c: eventbus.emit(AppEvents.SAMPLE_FREE_SETTINGS_CHANGED, {"sample_free_protect_threshold": self.sample_free_protect_threshold.get()}))
+
+        self.sample_free_protect_amount = tk.DoubleVar()
+        self.sample_free_protect_amount.set(graxpert.prefs.sample_free_protect_amount)
+        self.sample_free_protect_amount.trace_add("write", lambda a, b, c: eventbus.emit(AppEvents.SAMPLE_FREE_SETTINGS_CHANGED, {"sample_free_protect_amount": self.sample_free_protect_amount.get()}))
+
+        self.sample_free_simplified = tk.BooleanVar()
+        self.sample_free_simplified.set(graxpert.prefs.sample_free_simplified)
+        self.sample_free_simplified.trace_add("write", self.on_sample_free_simplified_changed)
+
+        self.sample_free_degrees = ["1", "2", "3", "4", "5", "6"]
+        self.sample_free_degree = tk.StringVar()
+        self.sample_free_degree.set(str(graxpert.prefs.sample_free_degree))
+        self.sample_free_degree.trace_add("write", lambda a, b, c: eventbus.emit(AppEvents.SAMPLE_FREE_SETTINGS_CHANGED, {"sample_free_degree": int(self.sample_free_degree.get())}))
 
         self.create_children()
         self.setup_layout()
@@ -160,6 +190,45 @@ class ExtractionMenu(CollapsibleMenuFrame):
         self.calculation_title = ProcessingStep(self.sub_frame, number=0, title=_(" Calculation"))
         self.smoothing_slider = ValueSlider(self.sub_frame, width=default_label_width, variable_name=_("Smoothing"), variable=self.smoothing, min_value=0, max_value=1, precision=1)
         tooltip.Tooltip(self.smoothing_slider, text=tooltip.smoothing_text)
+
+        # automatic sample-free model
+        self.sample_free_settings_title = ProcessingStep(self.sub_frame, number=0, title=_(" Sample-free Settings"))
+        self.sample_free_scale_slider = ValueSlider(self.sub_frame, width=default_label_width, variable_name=_("Scale"), variable=self.sample_free_scale, min_value=1, max_value=10, number_of_steps=18, precision=1)
+        tooltip.Tooltip(self.sample_free_scale_slider, text=tooltip.sample_free_scale_text)
+        self.sample_free_smoothness_slider = ValueSlider(self.sub_frame, width=default_label_width, variable_name=_("Smoothness"), variable=self.sample_free_smoothness, min_value=0, max_value=3, number_of_steps=30, precision=1)
+        tooltip.Tooltip(self.sample_free_smoothness_slider, text=tooltip.sample_free_smoothness_text)
+        self.sample_free_protect_checkbox = GraXpertCheckbox(self.sub_frame, width=default_label_width, text=_("Structure protection"), variable=self.sample_free_protect)
+        tooltip.Tooltip(self.sample_free_protect_checkbox, text=tooltip.sample_free_protect_text)
+        self.sample_free_threshold_slider = ValueSlider(
+            self.sub_frame,
+            width=default_label_width,
+            variable_name=_("Threshold"),
+            variable=self.sample_free_protect_threshold,
+            min_value=0,
+            max_value=1,
+            number_of_steps=200,
+            precision=4,
+            entry_width=65,
+        )
+        tooltip.Tooltip(self.sample_free_threshold_slider, text=tooltip.sample_free_threshold_text)
+        self.sample_free_amount_slider = ValueSlider(
+            self.sub_frame,
+            width=default_label_width,
+            variable_name=_("Amount"),
+            variable=self.sample_free_protect_amount,
+            min_value=0,
+            max_value=1,
+            number_of_steps=20,
+            precision=2,
+            entry_width=55,
+        )
+        tooltip.Tooltip(self.sample_free_amount_slider, text=tooltip.sample_free_amount_text)
+        self.sample_free_simplified_checkbox = GraXpertCheckbox(self.sub_frame, width=default_label_width, text=_("Simplified model"), variable=self.sample_free_simplified)
+        tooltip.Tooltip(self.sample_free_simplified_checkbox, text=tooltip.sample_free_simplified_text)
+        self.sample_free_degree_label = GraXpertLabel(self.sub_frame, width=default_label_width, text=_("Polynomial degree"))
+        self.sample_free_degree_menu = GraXpertOptionMenu(self.sub_frame, variable=self.sample_free_degree, values=self.sample_free_degrees)
+        tooltip.Tooltip(self.sample_free_degree_menu, text=tooltip.sample_free_degree_text)
+
         self.calculate_button = GraXpertButton(
             self.sub_frame,
             text=_("Calculate Background"),
@@ -171,6 +240,14 @@ class ExtractionMenu(CollapsibleMenuFrame):
 
     def setup_layout(self):
         super().setup_layout()
+
+    def on_sample_free_protect_changed(self, *args):
+        eventbus.emit(AppEvents.SAMPLE_FREE_SETTINGS_CHANGED, {"sample_free_protect": self.sample_free_protect.get()})
+        self.place_children()
+
+    def on_sample_free_simplified_changed(self, *args):
+        eventbus.emit(AppEvents.SAMPLE_FREE_SETTINGS_CHANGED, {"sample_free_simplified": self.sample_free_simplified.get()})
+        self.place_children()
 
     def place_children(self, event=None):
         super().place_children()
@@ -194,7 +271,7 @@ class ExtractionMenu(CollapsibleMenuFrame):
         self.bg_tol_slider.grid_forget()
         self.bg_selection_button.grid_forget()
         self.reset_button.grid_forget()
-        if not self.interpol_type.get() == "AI":
+        if self.interpol_type.get() not in ("AI", "Sample-free"):
             self.sample_selection_title.grid(column=0, row=next_row(), columnspan=2, pady=pady, sticky=tk.EW)
             self.display_pts_switch.grid(column=1, row=next_row(), pady=pady, sticky=tk.EW)
             self.flood_select_pts_switch.grid(column=1, row=next_row(), pady=pady, sticky=tk.EW)
@@ -203,12 +280,36 @@ class ExtractionMenu(CollapsibleMenuFrame):
             self.bg_selection_button.grid(column=1, row=next_row(), pady=pady, sticky=tk.EW)
             self.reset_button.grid(column=1, row=next_row(), pady=pady, sticky=tk.EW)
 
+        # automatic sample-free settings
+        self.sample_free_settings_title.grid_forget()
+        self.sample_free_scale_slider.grid_forget()
+        self.sample_free_smoothness_slider.grid_forget()
+        self.sample_free_protect_checkbox.grid_forget()
+        self.sample_free_threshold_slider.grid_forget()
+        self.sample_free_amount_slider.grid_forget()
+        self.sample_free_simplified_checkbox.grid_forget()
+        self.sample_free_degree_label.grid_forget()
+        self.sample_free_degree_menu.grid_forget()
+        if self.interpol_type.get() == "Sample-free":
+            self.sample_free_settings_title.grid(column=0, row=next_row(), columnspan=2, pady=pady, sticky=tk.EW)
+            self.sample_free_scale_slider.grid(column=1, row=next_row(), pady=pady, sticky=tk.EW)
+            self.sample_free_smoothness_slider.grid(column=1, row=next_row(), pady=pady, sticky=tk.EW)
+            self.sample_free_protect_checkbox.grid(column=1, row=next_row(), pady=pady, sticky=tk.EW)
+            if self.sample_free_protect.get():
+                self.sample_free_threshold_slider.grid(column=1, row=next_row(), pady=pady, sticky=tk.EW)
+                self.sample_free_amount_slider.grid(column=1, row=next_row(), pady=pady, sticky=tk.EW)
+            self.sample_free_simplified_checkbox.grid(column=1, row=next_row(), pady=pady, sticky=tk.EW)
+            if self.sample_free_simplified.get():
+                self.sample_free_degree_label.grid(column=1, row=next_row(), pady=(pady, 0), sticky=tk.EW)
+                self.sample_free_degree_menu.grid(column=1, row=next_row(), pady=pady, sticky=tk.EW)
+
         # calculation
         self.calculation_title.grid_forget()
         self.smoothing_slider.grid_forget()
         self.calculate_button.grid_forget()
         self.calculation_title.grid(column=0, row=next_row(), pady=pady, columnspan=2, sticky=tk.EW)
-        self.smoothing_slider.grid(column=1, row=next_row(), pady=pady, sticky=tk.EW)
+        if self.interpol_type.get() != "Sample-free":
+            self.smoothing_slider.grid(column=1, row=next_row(), pady=pady, sticky=tk.EW)
         self.calculate_button.grid(column=1, row=next_row(), pady=pady, sticky=tk.EW)
 
     def toggle(self):

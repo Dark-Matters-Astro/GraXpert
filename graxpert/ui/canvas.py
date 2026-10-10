@@ -170,16 +170,11 @@ class Canvas(CTkFrame):
         self.dynamic_progress_frame.update_progress(event["progress"])
 
     def on_calculate_success(self, event=None):
-        if not "Gradient-Corrected" in self.display_options:
-            self.display_options.append("Gradient-Corrected")
+        self.display_options = graxpert.images.display_options()
+        if self.display_menu is not None:
             self.display_menu.grid_forget()
-            self.display_menu = CTkOptionMenu(self, variable=self.display_type, values=self.display_options)
-            self.display_menu.grid(column=0, row=0, sticky=tk.N)
-        if not "Background" in self.display_options:
-            self.display_menu._values.append("Background")
-            self.display_menu.grid_forget()
-            self.display_menu = CTkOptionMenu(self, variable=self.display_type, values=self.display_options)
-            self.display_menu.grid(column=0, row=0, sticky=tk.N)
+        self.display_menu = CTkOptionMenu(self, variable=self.display_type, values=self.display_options)
+        self.display_menu.grid(column=0, row=0, sticky=tk.N)
 
     def on_calculate_end(self, event=None):
         self.dynamic_progress_frame.text.set("")
@@ -248,7 +243,7 @@ class Canvas(CTkFrame):
         self.show_loading_frame(False)
 
     def on_display_start_badge_request(self, event=None):
-        self.start_badge = ImageTk.PhotoImage(file=resource_path("img/graXpert_Startbadge_Umbriel.png"))
+        self.start_badge = ImageTk.PhotoImage(file=resource_path("img/graXpert_Startbadge_Charon.png"))
         self.canvas.create_image(self.canvas.winfo_width() / 2, self.canvas.winfo_height() / 2, anchor=tk.CENTER, image=self.start_badge, tags="start_badge")
         self.canvas.after(5000, lambda: self.canvas.delete("start_badge"))
 

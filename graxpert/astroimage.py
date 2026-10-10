@@ -10,8 +10,37 @@ from skimage.util import img_as_uint
 from xisf import XISF
 
 from graxpert.app_state import AppState
+from graxpert.fits import FitsKeys
 from graxpert.preferences import Prefs, app_state_2_fitsheader
 from graxpert.stretch import stretch, StretchParameters
+
+
+# Key names written by earlier versions, newest first so the most recent value wins if several are present:
+# GraXpert <= 3.1 used long HIERARCH names, development builds between 2025-09 and 2026-01 used short ones.
+# Some programs (e.g. PixInsight) truncate HIERARCH names to 8 characters when saving the file again.
+OLD_FITS_KEYS = {
+    FitsKeys.BG_EXTR: ("BG-EXTR",),
+    FitsKeys.GXSTRTCH: ("STRETCH",),
+    FitsKeys.GXINTOPT: ("INTP-OPT",),
+    FitsKeys.GXSMOOTH: ("SMOOTH", "SMOOTHING", "SMOOTHIN"),
+    FitsKeys.GXCORRT: ("CORRTYPE", "CORR-TYPE", "CORR-TYP"),
+    FitsKeys.GXBGAIV: ("BGAI_VER", "BGE-AI-VER", "BGE-AI-V", "AI-VER"),
+    FitsKeys.GXSAMPSZ: ("SAMPSIZE", "SAMPLE-SIZE", "SAMPLE-S"),
+    FitsKeys.GXRBFK: ("RBFKRNL", "RBF-KERNEL", "RBF-KERN"),
+    FitsKeys.GXSPLORD: ("SPLNORDR", "SPLINE-ORDER", "SPLINE-O"),
+    FitsKeys.GXBGPTS: ("BG-PTS",),
+}
+
+# XISF stores one background point per keyword. Older versions used the prefixes "BG-PTS" and "GXBGPTS",
+# which exceed the 8 character FITS keyword limit once the index is appended.
+BG_PT_KEY_PREFIXES = (FitsKeys.GXP.name, FitsKeys.GXBGPTS.name, "BG-PTS")
+
+
+def is_bg_pt_key(key):
+    for prefix in BG_PT_KEY_PREFIXES:
+        if key.startswith(prefix) and key[len(prefix) :].isdigit():
+            return True
+    return False
 
 
 class AstroImage:
@@ -136,7 +165,8 @@ class AstroImage:
         else:
             self.fits_header = original_header
 
-        self.fits_header["BG-EXTR"] = "GraXpert"
+        self.fits_header[FitsKeys.BG_EXTR.name] = "GraXpert"
+        self.fits_header.comments[FitsKeys.BG_EXTR.name] = FitsKeys.BG_EXTR.value
         self.fits_header["CBG-1"] = background_mean
         self.fits_header["CBG-2"] = background_mean
         self.fits_header["CBG-3"] = background_mean
@@ -144,6 +174,41 @@ class AstroImage:
 
         if "ROWORDER" in self.fits_header:
             self.roworder = self.fits_header["ROWORDER"]
+
+    # added in GraXpert 3.1 for better fits header compatability
+    def migrate_fits_keys(self):
+
+        migrated_count = 0
+
+        for key, oldkeys in OLD_FITS_KEYS.items():
+            for oldkey in oldkeys:
+                migrated_count += self.migrate_fits_key(self.fits_header, oldkey, key.name, key.value)
+
+        if migrated_count > 0:
+            logging.info(f"Migrated {migrated_count} old fits header keys")
+
+    def migrate_fits_key(self, fits_header, oldkey, newkey, comment):
+        if oldkey in self.fits_header.keys():
+            try:
+                if newkey in self.fits_header.keys():
+                    # the image has been processed again by a newer version, its value takes precedence
+                    logging.info(f"Removing obsolete fits header key {oldkey}, {newkey} is already present")
+                    del self.fits_header[oldkey]
+                    return 1
+                try:
+                    self.fits_header[oldkey]
+                except Exception as e:
+                    # e.g. long string values whose CONTINUE cards were rewritten by another program
+                    logging.warning(f"Removing fits header key {oldkey}, its value is damaged and cannot be read: {e}")
+                    del self.fits_header[oldkey]
+                    return 0
+                logging.info(f"Migrating fits header key {oldkey} to {newkey}")
+                self.fits_header.rename_keyword(oldkey, newkey)
+                self.fits_header.comments[newkey] = comment
+                return 1
+            except Exception as e:
+                logging.exception(e)
+        return 0
 
     def save(self, dir, saveas_type):
         if self.img_array is None:
@@ -180,7 +245,7 @@ class AstroImage:
             return
 
         if self.fits_header is not None:
-            self.fits_header["STRETCH"] = stretch_params.stretch_option
+            self.fits_header[FitsKeys.GXSTRTCH.name] = stretch_params.stretch_option
 
         stretched_img = self.stretch(stretch_params)
 
@@ -246,12 +311,12 @@ class AstroImage:
         unique_keys = list(dict.fromkeys(self.fits_header.keys()))
 
         for key in unique_keys:
-            if key == "BG-PTS":
+            if key == FitsKeys.GXBGPTS.name:
                 try:
-                    bg_pts = json.loads(self.fits_header["BG-PTS"])
+                    bg_pts = json.loads(self.fits_header[FitsKeys.GXBGPTS.name])
 
                     for i in range(len(bg_pts)):
-                        self.image_metadata["FITSKeywords"]["BG-PTS" + str(i)] = [{"value": bg_pts[i], "comment": ""}]
+                        self.image_metadata["FITSKeywords"][f"{FitsKeys.GXP.name}{i:05d}"] = [{"value": bg_pts[i], "comment": ""}]
                 except:
                     logging.warning("Could not transfer background points from fits header to xisf image metadata", stack_info=True)
             else:
@@ -281,7 +346,7 @@ class AstroImage:
 
         bg_pts = []
         for key in self.image_metadata["FITSKeywords"].keys():
-            if key.startswith("BG-PTS"):
+            if is_bg_pt_key(key):
                 try:
                     bg_pts.append(json.loads(self.image_metadata["FITSKeywords"][key][0]["value"]))
                 except:
@@ -305,4 +370,5 @@ class AstroImage:
                     self.fits_header[key] = (value, comment)
 
         if len(bg_pts) > 0:
-            self.fits_header["BG-PTS"] = str(bg_pts)
+            self.fits_header[FitsKeys.GXBGPTS.name] = str(bg_pts)
+            self.fits_header.comments[FitsKeys.GXBGPTS.name] = FitsKeys.GXBGPTS.value

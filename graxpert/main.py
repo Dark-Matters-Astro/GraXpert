@@ -2,6 +2,9 @@ import os
 import platform
 import sys
 
+# Disable telemetry before ONNX loads; spawned helpers inherit this setting.
+os.environ["ORT_DISABLE_TELEMETRY"] = "1"
+
 # ensure sys.stdout and sys.stderr are not None in PyInstaller environments
 if sys.stdout is None:
     sys.stdout = open(os.devnull, "w")
@@ -12,11 +15,14 @@ import logging
 import multiprocessing
 import re
 import sys
+import faulthandler
 
 from packaging import version
 
+from graxpert.cli_background import add_background_arguments
+
 from graxpert.ai_model_handling import bge_ai_models_dir, denoise_ai_models_dir, deconvolution_object_ai_models_dir, deconvolution_stars_ai_models_dir, list_local_versions, list_remote_versions
-from graxpert.mp_logging import configure_logging
+from graxpert.mp_logging import configure_logging, logfile_name
 from graxpert.s3_secrets import bge_bucket_name, denoise_bucket_name, deconvolution_object_bucket_name, deconvolution_stars_bucket_name
 from graxpert.version import release as graxpert_release
 from graxpert.version import version as graxpert_version
@@ -220,6 +226,7 @@ def main():
         parser.add_argument("-v", "--version", action="version", version=f"GraXpert version: {graxpert_version} release: {graxpert_release}")
 
         bge_parser = argparse.ArgumentParser("GraXpert Background Extraction", parents=[parser], description="GraXpert, the astronomical background extraction tool")
+        add_background_arguments(bge_parser)
         bge_parser.add_argument(
             "-ai_version",
             "--ai_version",
@@ -355,6 +362,8 @@ def main():
                 deconv_obj_parser.print_help()
             elif "deconv-stellar" in sys.argv:
                 deconv_stellar_parser.print_help()
+            else:
+                parser.print_help()
             sys.exit(0)
 
         args, extras = parser.parse_known_args()
@@ -407,5 +416,12 @@ def main():
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     configure_logging()
+    faulthandler_log = open(os.path.join(os.path.dirname(logfile_name), "faulthandler.log"), "w")
+    faulthandler.enable(faulthandler_log)
+    import onnxruntime as ort
+    try:
+        ort.disable_telemetry_events()
+    except Exception as e:
+        logging.exception(e)
     main()
     logging.shutdown()

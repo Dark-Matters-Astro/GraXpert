@@ -9,17 +9,18 @@ class ImageTypes(StrEnum):
     Original = "Original"
     Gradient_Corrected = "Gradient-Corrected"
     Background = "Background"
+    Simplified_Model = "Simplified Model"
     Deconvolved_Object_only = "Deconvolved Object-only"
     Deconvolved_Stars_only = "Deconvolved Stars-only"
     Denoised = "Denoised"
 
 
 class AstroImageRepository:
-
     images: Dict = {
         ImageTypes.Original: None,
         ImageTypes.Gradient_Corrected: None,
         ImageTypes.Background: None,
+        ImageTypes.Simplified_Model: None,
         ImageTypes.Deconvolved_Object_only: None,
         ImageTypes.Deconvolved_Stars_only: None,
         ImageTypes.Denoised: None,
@@ -57,6 +58,10 @@ class AstroImageRepository:
 
                 all_image_arrays.append(self.get(ImageTypes.Background).img_array)
                 all_mtf_stretch_params.append(all_mtf_stretch_params[0])
+
+                if self.get(ImageTypes.Simplified_Model) is not None:
+                    all_image_arrays.append(self.get(ImageTypes.Simplified_Model).img_array)
+                    all_mtf_stretch_params.append(all_mtf_stretch_params[0])
 
             if self.get(ImageTypes.Deconvolved_Object_only) is not None and self.get(ImageTypes.Gradient_Corrected) is None:
                 all_image_arrays.append(self.get(ImageTypes.Deconvolved_Object_only).img_array)

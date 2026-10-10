@@ -1,6 +1,9 @@
 *-scaled.png
 __pycache__
 graxpert/s3_secrets.py
+.venv-windows/
+.local-test-data/
+:memory:.ses
 build
 dist
 .idea

@@ -13,6 +13,7 @@ from graxpert.application.app_events import AppEvents
 from graxpert.application.eventbus import eventbus
 from graxpert.localization import _, lang
 from graxpert.resource_utils import resource_path
+import graxpert.ui.tooltip as tooltip
 from graxpert.s3_secrets import bge_bucket_name, deconvolution_object_bucket_name, deconvolution_stars_bucket_name, denoise_bucket_name
 from graxpert.ui.widgets import GraXpertOptionMenu, GraXpertScrollableFrame, ProcessingStep, ValueSlider, padx, pady
 
@@ -97,6 +98,13 @@ class HelpFrame(RightFrameBase):
         url_label_1.bind("<Button-1>", lambda e: callback(url_link_1))
 
         row = self.nrow()
+        HelpText(self, rows=3, text=_("The sample-free background method is adapted from Siril. The GraXpert team thanks Cyril Richard and the Siril team for their work and collaboration.")).grid(column=0, row=row, padx=padx, pady=pady, sticky=tk.W)
+        siril_url = "https://siril.readthedocs.io/en/latest/processing/background.html#automatic-sample-free-method"
+        siril_label = CTkLabel(self, text="<Siril>", text_color="dodger blue")
+        siril_label.grid(column=0, row=row, padx=padx, sticky=tk.E)
+        siril_label.bind("<Button-1>", lambda e: callback(siril_url))
+
+        row = self.nrow()
         HelpText(self, rows=2, text=_("Background Extraction AI models are licensed under CC BY-NC-SA:")).grid(column=0, row=row, padx=padx, pady=pady, sticky=tk.W)
         url_link_2 = "https://raw.githubusercontent.com/Steffenhir/GraXpert/main/licenses/BGE-Model-LICENSE.html"
         url_label_2 = CTkLabel(self, text="<Link>", text_color="dodger blue")
@@ -150,6 +158,12 @@ class AdvancedFrame(RightFrameBase):
         self.corr_type = tk.StringVar()
         self.corr_type.set(graxpert.prefs.corr_type)
         self.corr_type.trace_add("write", lambda a, b, c: eventbus.emit(AppEvents.CORRECTION_TYPE_CHANGED, {"corr_type": self.corr_type.get()}))
+
+        # automatic sample-free performance setting
+        self.sample_free_downsamples = ["1", "2", "4", "8"]
+        self.sample_free_downsample = tk.StringVar()
+        self.sample_free_downsample.set(str(graxpert.prefs.sample_free_downsample))
+        self.sample_free_downsample.trace_add("write", lambda a, b, c: eventbus.emit(AppEvents.SAMPLE_FREE_SETTINGS_CHANGED, {"sample_free_downsample": int(self.sample_free_downsample.get())}))
 
         # interface
         self.langs = ["English", "Deutsch"]
@@ -266,6 +280,13 @@ class AdvancedFrame(RightFrameBase):
 
         CTkLabel(self, text=_("Correction")).grid(column=0, row=self.nrow(), pady=pady, sticky=tk.N)
         GraXpertOptionMenu(self, variable=self.corr_type, values=self.corr_types).grid(**self.default_grid())
+
+        # automatic sample-free performance
+        CTkLabel(self, text=_("Sample-free performance"), font=self.heading_font2).grid(column=0, row=self.nrow(), pady=pady, sticky=tk.N)
+        CTkLabel(self, text=_("Internal downsample")).grid(column=0, row=self.nrow(), pady=pady, sticky=tk.N)
+        sample_free_downsample_menu = GraXpertOptionMenu(self, variable=self.sample_free_downsample, values=self.sample_free_downsamples)
+        sample_free_downsample_menu.grid(**self.default_grid())
+        tooltip.Tooltip(sample_free_downsample_menu, text=tooltip.sample_free_downsample_text)
 
         # interface
         CTkLabel(self, text=_("Interface"), font=self.heading_font2).grid(column=0, row=self.nrow(), pady=pady, sticky=tk.N)
