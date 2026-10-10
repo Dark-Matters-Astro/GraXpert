@@ -304,12 +304,14 @@ class AdvancedFrame(RightFrameBase):
         GraXpertOptionMenu(self, variable=self.bge_ai_version, values=self.bge_ai_options).grid(**self.default_grid())
 
         # object-deconvolution ai model
-        CTkLabel(self, text=_("Object Deconvolution AI-Model"), font=self.heading_font2).grid(column=0, row=self.nrow(), pady=pady, sticky=tk.N)
-        GraXpertOptionMenu(self, variable=self.deconvolution_object_ai_version, values=self.deconvolution_object_ai_options).grid(**self.default_grid())
+        # 2026-10-10: disable deconvolution for Charon due to insufficient model quality
+        # CTkLabel(self, text=_("Object Deconvolution AI-Model"), font=self.heading_font2).grid(column=0, row=self.nrow(), pady=pady, sticky=tk.N)
+        # GraXpertOptionMenu(self, variable=self.deconvolution_object_ai_version, values=self.deconvolution_object_ai_options).grid(**self.default_grid())
 
         # stars-deconvolution ai model
-        CTkLabel(self, text=_("Stars Deconvolution AI-Model"), font=self.heading_font2).grid(column=0, row=self.nrow(), pady=pady, sticky=tk.N)
-        GraXpertOptionMenu(self, variable=self.deconvolution_stars_ai_version, values=self.deconvolution_stars_ai_options).grid(**self.default_grid())
+        # 2026-10-10: disable deconvolution for Charon due to insufficient model quality
+        # CTkLabel(self, text=_("Stars Deconvolution AI-Model"), font=self.heading_font2).grid(column=0, row=self.nrow(), pady=pady, sticky=tk.N)
+        # GraXpertOptionMenu(self, variable=self.deconvolution_stars_ai_version, values=self.deconvolution_stars_ai_options).grid(**self.default_grid())
 
         # denoise ai model
         CTkLabel(self, text=_("Denoising AI-Model"), font=self.heading_font2).grid(column=0, row=self.nrow(), pady=pady, sticky=tk.N)

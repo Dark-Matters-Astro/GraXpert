@@ -207,9 +207,12 @@ def main():
             "--command",
             required=False,
             default="background-extraction",
-            choices=["background-extraction", "denoising", "deconv-obj", "deconv-stellar"],
+            # 2026-10-10: disable deconvolution for Charon due to insufficient model quality
+            # choices=["background-extraction", "denoising", "deconv-obj", "deconv-stellar"],
+            choices=["background-extraction", "denoising"],
             type=str,
-            help="Choose the image operation to execute: Background Extraction or Denoising or Deconvolution",
+            # help="Choose the image operation to execute: Background Extraction or Denoising or Deconvolution",
+            help="Choose the image operation to execute: Background Extraction or Denoising",
         )
         parser.add_argument("filename", type=str, help="Path of the unprocessed image")
         parser.add_argument("-output", "--output", nargs="?", required=False, type=str, help="Filename of the processed image")
@@ -358,10 +361,11 @@ def main():
                 bge_parser.print_help()
             elif "denoising" in sys.argv:
                 denoise_parser.print_help()
-            elif "deconv-obj" in sys.argv:
-                deconv_obj_parser.print_help()
-            elif "deconv-stellar" in sys.argv:
-                deconv_stellar_parser.print_help()
+            # 2026-10-10: disable deconvolution for Charon due to insufficient model quality
+            # elif "deconv-obj" in sys.argv:
+            #     deconv_obj_parser.print_help()
+            # elif "deconv-stellar" in sys.argv:
+            #     deconv_stellar_parser.print_help()
             else:
                 parser.print_help()
             sys.exit(0)
