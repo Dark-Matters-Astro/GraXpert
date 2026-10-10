@@ -155,6 +155,26 @@ def app_state_2_fitsheader(prefs: Prefs, app_state: AppState, fits_header):
     return fits_header
 
 
+def header_value(fits_header, key, default):
+    # other programs may change value types when saving the file again, e.g. PixInsight writes integers as floats
+    if key not in fits_header.keys():
+        return default
+    value = fits_header[key]
+    try:
+        if isinstance(default, bool):
+            return value if isinstance(value, bool) else str(value).strip().upper() in ("T", "TRUE", "1")
+        if isinstance(default, int):
+            return int(round(float(value)))
+        if isinstance(default, float):
+            return float(value)
+        if isinstance(default, str):
+            return str(value)
+    except (TypeError, ValueError):
+        logging.warning(f"Ignoring fits header key {key}, unexpected value {value!r}")
+        return default
+    return value
+
+
 def fitsheader_2_app_state(prefs: Prefs, app_state: AppState, fits_header):
     if FitsKeys.GXBGPTS.name in fits_header.keys():
         try:
@@ -164,22 +184,22 @@ def fitsheader_2_app_state(prefs: Prefs, app_state: AppState, fits_header):
 
     if FitsKeys.GXINTOPT.name in fits_header.keys():
         prefs.interpol_type_option = fits_header[FitsKeys.GXINTOPT.name]
-        prefs.smoothing_option = fits_header[FitsKeys.GXSMOOTH.name]
-        prefs.corr_type = fits_header[FitsKeys.GXCORRT.name]
+        prefs.smoothing_option = header_value(fits_header, FitsKeys.GXSMOOTH.name, prefs.smoothing_option)
+        prefs.corr_type = header_value(fits_header, FitsKeys.GXCORRT.name, prefs.corr_type)
 
         if fits_header[FitsKeys.GXINTOPT.name] == "Sample-free":
-            prefs.sample_free_scale = fits_header.get(FitsKeys.GXSFSCAL.name, prefs.sample_free_scale)
-            prefs.sample_free_smoothness = fits_header.get(FitsKeys.GXSFSMTH.name, prefs.sample_free_smoothness)
-            prefs.sample_free_protect = fits_header.get(FitsKeys.GXSFPROT.name, prefs.sample_free_protect)
-            prefs.sample_free_protect_threshold = fits_header.get(FitsKeys.GXSFTHR.name, prefs.sample_free_protect_threshold)
-            prefs.sample_free_protect_amount = fits_header.get(FitsKeys.GXSFAMT.name, prefs.sample_free_protect_amount)
-            prefs.sample_free_simplified = fits_header.get(FitsKeys.GXSFSIMP.name, prefs.sample_free_simplified)
-            prefs.sample_free_degree = fits_header.get(FitsKeys.GXSFDEG.name, prefs.sample_free_degree)
-            prefs.sample_free_downsample = fits_header.get(FitsKeys.GXSFDOWN.name, prefs.sample_free_downsample)
+            prefs.sample_free_scale = header_value(fits_header, FitsKeys.GXSFSCAL.name, prefs.sample_free_scale)
+            prefs.sample_free_smoothness = header_value(fits_header, FitsKeys.GXSFSMTH.name, prefs.sample_free_smoothness)
+            prefs.sample_free_protect = header_value(fits_header, FitsKeys.GXSFPROT.name, prefs.sample_free_protect)
+            prefs.sample_free_protect_threshold = header_value(fits_header, FitsKeys.GXSFTHR.name, prefs.sample_free_protect_threshold)
+            prefs.sample_free_protect_amount = header_value(fits_header, FitsKeys.GXSFAMT.name, prefs.sample_free_protect_amount)
+            prefs.sample_free_simplified = header_value(fits_header, FitsKeys.GXSFSIMP.name, prefs.sample_free_simplified)
+            prefs.sample_free_degree = header_value(fits_header, FitsKeys.GXSFDEG.name, prefs.sample_free_degree)
+            prefs.sample_free_downsample = header_value(fits_header, FitsKeys.GXSFDOWN.name, prefs.sample_free_downsample)
 
         if fits_header[FitsKeys.GXINTOPT.name] not in ("AI", "Sample-free"):
-            prefs.sample_size = fits_header[FitsKeys.GXSAMPSZ.name]
-            prefs.RBF_kernel = fits_header[FitsKeys.GXRBFK.name]
-            prefs.spline_order = fits_header[FitsKeys.GXSPLORD.name]
+            prefs.sample_size = header_value(fits_header, FitsKeys.GXSAMPSZ.name, prefs.sample_size)
+            prefs.RBF_kernel = header_value(fits_header, FitsKeys.GXRBFK.name, prefs.RBF_kernel)
+            prefs.spline_order = header_value(fits_header, FitsKeys.GXSPLORD.name, prefs.spline_order)
 
     return app_state

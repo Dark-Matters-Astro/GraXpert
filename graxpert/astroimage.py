@@ -15,6 +15,22 @@ from graxpert.preferences import Prefs, app_state_2_fitsheader
 from graxpert.stretch import stretch, StretchParameters
 
 
+# Key names written by earlier versions, newest first so the most recent value wins if several are present:
+# GraXpert <= 3.1 used long HIERARCH names, development builds between 2025-09 and 2026-01 used short ones.
+# Some programs (e.g. PixInsight) truncate HIERARCH names to 8 characters when saving the file again.
+OLD_FITS_KEYS = {
+    FitsKeys.BG_EXTR: ("BG-EXTR",),
+    FitsKeys.GXSTRTCH: ("STRETCH",),
+    FitsKeys.GXINTOPT: ("INTP-OPT",),
+    FitsKeys.GXSMOOTH: ("SMOOTH", "SMOOTHING", "SMOOTHIN"),
+    FitsKeys.GXCORRT: ("CORRTYPE", "CORR-TYPE", "CORR-TYP"),
+    FitsKeys.GXBGAIV: ("BGAI_VER", "BGE-AI-VER", "BGE-AI-V", "AI-VER"),
+    FitsKeys.GXSAMPSZ: ("SAMPSIZE", "SAMPLE-SIZE", "SAMPLE-S"),
+    FitsKeys.GXRBFK: ("RBFKRNL", "RBF-KERNEL", "RBF-KERN"),
+    FitsKeys.GXSPLORD: ("SPLNORDR", "SPLINE-ORDER", "SPLINE-O"),
+    FitsKeys.GXBGPTS: ("BG-PTS",),
+}
+
 # XISF stores one background point per keyword. Older versions used the prefixes "BG-PTS" and "GXBGPTS",
 # which exceed the 8 character FITS keyword limit once the index is appended.
 BG_PT_KEY_PREFIXES = (FitsKeys.GXP.name, FitsKeys.GXBGPTS.name, "BG-PTS")
@@ -164,15 +180,9 @@ class AstroImage:
 
         migrated_count = 0
 
-        migrated_count += self.migrate_fits_key(self.fits_header, "STRETCH", FitsKeys.GXSTRTCH.name, FitsKeys.GXSTRTCH.value)
-        migrated_count += self.migrate_fits_key(self.fits_header, "INTP-OPT", FitsKeys.GXINTOPT.name, FitsKeys.GXINTOPT.value)
-        migrated_count += self.migrate_fits_key(self.fits_header, "SMOOTHING", FitsKeys.GXSMOOTH.name, FitsKeys.GXSMOOTH.value)
-        migrated_count += self.migrate_fits_key(self.fits_header, "CORR-TYPE", FitsKeys.GXCORRT.name, FitsKeys.GXCORRT.value)
-        migrated_count += self.migrate_fits_key(self.fits_header, "BGE-AI-VER", FitsKeys.GXBGAIV.name, FitsKeys.GXBGAIV.value)
-        migrated_count += self.migrate_fits_key(self.fits_header, "SAMPLE-SIZE", FitsKeys.GXSAMPSZ.name, FitsKeys.GXSAMPSZ.value)
-        migrated_count += self.migrate_fits_key(self.fits_header, "RBF-KERNEL", FitsKeys.GXRBFK.name, FitsKeys.GXRBFK.value)
-        migrated_count += self.migrate_fits_key(self.fits_header, "SPLINE-ORDER", FitsKeys.GXSPLORD.name, FitsKeys.GXSPLORD.value)
-        migrated_count += self.migrate_fits_key(self.fits_header, "BG-PTS", FitsKeys.GXBGPTS.name, FitsKeys.GXBGPTS.value)
+        for key, oldkeys in OLD_FITS_KEYS.items():
+            for oldkey in oldkeys:
+                migrated_count += self.migrate_fits_key(self.fits_header, oldkey, key.name, key.value)
 
         if migrated_count > 0:
             logging.info(f"Migrated {migrated_count} old fits header keys")
@@ -180,6 +190,18 @@ class AstroImage:
     def migrate_fits_key(self, fits_header, oldkey, newkey, comment):
         if oldkey in self.fits_header.keys():
             try:
+                if newkey in self.fits_header.keys():
+                    # the image has been processed again by a newer version, its value takes precedence
+                    logging.info(f"Removing obsolete fits header key {oldkey}, {newkey} is already present")
+                    del self.fits_header[oldkey]
+                    return 1
+                try:
+                    self.fits_header[oldkey]
+                except Exception as e:
+                    # e.g. long string values whose CONTINUE cards were rewritten by another program
+                    logging.warning(f"Removing fits header key {oldkey}, its value is damaged and cannot be read: {e}")
+                    del self.fits_header[oldkey]
+                    return 0
                 logging.info(f"Migrating fits header key {oldkey} to {newkey}")
                 self.fits_header.rename_keyword(oldkey, newkey)
                 self.fits_header.comments[newkey] = comment

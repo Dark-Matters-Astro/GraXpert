@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 import tkinter as tk
@@ -392,7 +393,8 @@ class GraXpert:
         self.prefs.height = height
 
         self.images.get(ImageTypes.Original).migrate_fits_keys()
-        tmp_state = fitsheader_2_app_state(self, self.cmd.app_state, self.images.get(ImageTypes.Original).fits_header)
+        # only the background points are taken over, the stored settings must not silently replace the ones shown in the UI
+        tmp_state = fitsheader_2_app_state(copy.deepcopy(self.prefs), self.cmd.app_state, self.images.get(ImageTypes.Original).fits_header)
         self.cmd: Command = Command(INIT_HANDLER, background_points=tmp_state.background_points)
         self.cmd.execute()
 
