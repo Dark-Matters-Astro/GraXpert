@@ -49,7 +49,7 @@ class GraXpertScrollableFrame(CTkScrollableFrame):
         self.bind_all("<Button-5>", self.on_mouse_wheel, add="+")  # Mouse Wheel Linux
 
     def on_mouse_wheel(self, event=None):
-        if self.check_if_master_is_canvas(event.widget):
+        if self._check_if_valid_scroll(event.widget):
             if self._shift_pressed:
                 if self._parent_canvas.xview() != (0.0, 1.0):
                     if event.delta > 0 or event.num == 4:
