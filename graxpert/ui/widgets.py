@@ -103,6 +103,7 @@ class ValueSlider(CTkFrame):
         max_value=1,
         number_of_steps=None,
         precision=1,
+        entry_width=35,
         **kwargs,
     ):
         super().__init__(parent, width=width, **kwargs)
@@ -111,6 +112,7 @@ class ValueSlider(CTkFrame):
         self.max_value = max_value
         self.number_of_steps = number_of_steps
         self.precision = precision
+        self.entry_width = entry_width
 
         if variable:
             self.variable = variable
@@ -128,7 +130,7 @@ class ValueSlider(CTkFrame):
 
     def create_children(self):
         self.variable_label = CTkLabel(self, width=0, text=self.variable_name)
-        self.entry = CTkEntry(self, width=35, textvariable=self.entry_variable, validate="focusout")
+        self.entry = CTkEntry(self, width=self.entry_width, textvariable=self.entry_variable, validate="focusout")
         self.entry_variable.trace_add("write", lambda a, b, c: self.format_entry())
         self.slider = CTkSlider(
             self,

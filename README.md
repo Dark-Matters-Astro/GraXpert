@@ -17,6 +17,19 @@ Original                     |  Gradients removed with AI
 **Homepage:** [https://www.graxpert.com](https://www.graxpert.com)  
 **Download:** [https://github.com/Steffenhir/GraXpert/releases/latest](https://github.com/Steffenhir/GraXpert/releases/latest)
 
+## Acknowledgements
+
+The automatic sample-free background method is adapted from
+[Siril](https://siril.readthedocs.io/en/latest/processing/background.html#automatic-sample-free-method).
+The GraXpert team thanks Cyril Richard and the Siril team for their work and for
+supporting continued collaboration between both projects. Technical and license
+details are recorded in `licenses/SIRIL_SAMPLE_FREE_NOTICE.md`.
+
+The repeated Gaussian approximation used by this method runs as a compact ONNX
+Runtime graph. The robust statistics, structure mask and polynomial fit remain
+the original deterministic algorithm; ONNX accelerates its principal filtering
+bottleneck without replacing it with a trained AI model.
+
 # Installation
 You can download the latest official release of GraXpert [here](https://github.com/Steffenhir/GraXpert/releases/latest). Select the correct version for your operating system. For macOS, we provide different versions
 for Intel processors (x86_64) and for apple silicon (arm64).
@@ -121,4 +134,43 @@ Once you have set up the virtual environment and installed the required packages
 python -m graxpert.main
 ```
 
+For validation of the sample-free ONNX implementation on Windows, see
+[`WINDOWS-TEST.md`](WINDOWS-TEST.md).
 
+### Sample-free background extraction from the command line
+
+The `feature/automatic-bge` build accepts Sample-free parameters directly,
+including for PixInsight integration. Background extraction is the default
+command, so `-cmd background-extraction` is optional.
+
+```sh
+GraXpert PixInsight.xisf -cli -interpolation sample_free \
+  -sample_free_scale 5 -sample_free_smoothness 1.0 \
+  -sample_free_protect true -sample_free_protect_threshold 0.05 \
+  -sample_free_protect_amount 0.50 -sample_free_simplified false \
+  -sample_free_degree 1 -sample_free_downsample 1 \
+  -correction Subtraction -output PixInsight_corrected -bg
+```
+
+Every option needs its leading hyphen. Double-hyphen spellings are also
+accepted. `sample_free` and `Sample-free` select the same method. No background
+samples or trained AI model are required. `-bg` also saves the background model;
+`-output` specifies the output basename without an extension. XISF input produces
+XISF output; FITS input produces FITS output.
+
+Explicit CLI options override values from `-preferences_file`. Omitted options
+retain their JSON settings or application defaults. Without `-interpolation` or
+a preferences file selecting another method, extraction still defaults to AI.
+
+| Option | Valid values |
+| --- | --- |
+| `-sample_free_scale` | 1–10 |
+| `-sample_free_smoothness` | finite number >= 0 |
+| `-sample_free_protect` | `true`, `false` |
+| `-sample_free_protect_threshold` | 0–1 |
+| `-sample_free_protect_amount` | 0–1 |
+| `-sample_free_simplified` | `true`, `false` |
+| `-sample_free_degree` | integer 1–6; used with simplified mode |
+| `-sample_free_downsample` | 1, 2, 4, 8 |
+
+Use `GraXpert -cli -cmd background-extraction --help` for the command-line help.

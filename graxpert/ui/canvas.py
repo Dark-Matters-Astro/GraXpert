@@ -170,16 +170,11 @@ class Canvas(CTkFrame):
         self.dynamic_progress_frame.update_progress(event["progress"])
 
     def on_calculate_success(self, event=None):
-        if not "Gradient-Corrected" in self.display_options:
-            self.display_options.append("Gradient-Corrected")
+        self.display_options = graxpert.images.display_options()
+        if self.display_menu is not None:
             self.display_menu.grid_forget()
-            self.display_menu = CTkOptionMenu(self, variable=self.display_type, values=self.display_options)
-            self.display_menu.grid(column=0, row=0, sticky=tk.N)
-        if not "Background" in self.display_options:
-            self.display_menu._values.append("Background")
-            self.display_menu.grid_forget()
-            self.display_menu = CTkOptionMenu(self, variable=self.display_type, values=self.display_options)
-            self.display_menu.grid(column=0, row=0, sticky=tk.N)
+        self.display_menu = CTkOptionMenu(self, variable=self.display_type, values=self.display_options)
+        self.display_menu.grid(column=0, row=0, sticky=tk.N)
 
     def on_calculate_end(self, event=None):
         self.dynamic_progress_frame.text.set("")

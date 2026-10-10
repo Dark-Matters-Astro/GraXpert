@@ -29,6 +29,14 @@ class Prefs:
     bg_tol_option: float = 1.0
     interpol_type_option: AnyStr = "RBF"
     smoothing_option: float = 0.0
+    sample_free_scale: float = 5.0
+    sample_free_smoothness: float = 1.0
+    sample_free_protect: bool = True
+    sample_free_protect_threshold: float = 0.05
+    sample_free_protect_amount: float = 0.5
+    sample_free_simplified: bool = True
+    sample_free_degree: int = 1
+    sample_free_downsample: int = 4
     saveas_option: AnyStr = "32 bit Tiff"
     saveas_stretched: bool = False
     sample_size: int = 25
@@ -117,7 +125,21 @@ def app_state_2_fitsheader(prefs: Prefs, app_state: AppState, fits_header):
         fits_header[FitsKeys.GXBGAIV.name] = prefs.bge_ai_version
         fits_header.comments[FitsKeys.GXBGAIV.name] = FitsKeys.GXBGAIV.value
 
-    if prefs.interpol_type_option != "AI":
+    if prefs.interpol_type_option == "Sample-free":
+        for key, value in (
+            (FitsKeys.GXSFSCAL, prefs.sample_free_scale),
+            (FitsKeys.GXSFSMTH, prefs.sample_free_smoothness),
+            (FitsKeys.GXSFPROT, prefs.sample_free_protect),
+            (FitsKeys.GXSFTHR, prefs.sample_free_protect_threshold),
+            (FitsKeys.GXSFAMT, prefs.sample_free_protect_amount),
+            (FitsKeys.GXSFSIMP, prefs.sample_free_simplified),
+            (FitsKeys.GXSFDEG, prefs.sample_free_degree),
+            (FitsKeys.GXSFDOWN, prefs.sample_free_downsample),
+        ):
+            fits_header[key.name] = value
+            fits_header.comments[key.name] = key.value
+
+    if prefs.interpol_type_option not in ("AI", "Sample-free"):
         fits_header[FitsKeys.GXSAMPSZ.name] = prefs.sample_size
         fits_header.comments[FitsKeys.GXSAMPSZ.name] = FitsKeys.GXSAMPSZ.value
 
@@ -145,7 +167,17 @@ def fitsheader_2_app_state(prefs: Prefs, app_state: AppState, fits_header):
         prefs.smoothing_option = fits_header[FitsKeys.GXSMOOTH.name]
         prefs.corr_type = fits_header[FitsKeys.GXCORRT.name]
 
-        if fits_header[FitsKeys.GXINTOPT.name] != "AI":
+        if fits_header[FitsKeys.GXINTOPT.name] == "Sample-free":
+            prefs.sample_free_scale = fits_header.get(FitsKeys.GXSFSCAL.name, prefs.sample_free_scale)
+            prefs.sample_free_smoothness = fits_header.get(FitsKeys.GXSFSMTH.name, prefs.sample_free_smoothness)
+            prefs.sample_free_protect = fits_header.get(FitsKeys.GXSFPROT.name, prefs.sample_free_protect)
+            prefs.sample_free_protect_threshold = fits_header.get(FitsKeys.GXSFTHR.name, prefs.sample_free_protect_threshold)
+            prefs.sample_free_protect_amount = fits_header.get(FitsKeys.GXSFAMT.name, prefs.sample_free_protect_amount)
+            prefs.sample_free_simplified = fits_header.get(FitsKeys.GXSFSIMP.name, prefs.sample_free_simplified)
+            prefs.sample_free_degree = fits_header.get(FitsKeys.GXSFDEG.name, prefs.sample_free_degree)
+            prefs.sample_free_downsample = fits_header.get(FitsKeys.GXSFDOWN.name, prefs.sample_free_downsample)
+
+        if fits_header[FitsKeys.GXINTOPT.name] not in ("AI", "Sample-free"):
             prefs.sample_size = fits_header[FitsKeys.GXSAMPSZ.name]
             prefs.RBF_kernel = fits_header[FitsKeys.GXRBFK.name]
             prefs.spline_order = fits_header[FitsKeys.GXSPLORD.name]

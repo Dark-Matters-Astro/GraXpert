@@ -92,5 +92,6 @@ class AppEvents(Enum):
     SCALING_CHANGED = auto()
     AI_BATCH_SIZE_CHANGED = auto()
     AI_GPU_ACCELERATION_CHANGED = auto()
+    SAMPLE_FREE_SETTINGS_CHANGED = auto()
     # process control
     CANCEL_PROCESSING = auto()
